@@ -1,0 +1,23 @@
+{
+  "manifest_version": 2,
+
+  "name": "Stop Shopping",
+  "description": "This extension reminds a user how much they have in their bank account.",
+  "version": "1.0",
+
+  "browser_action": {
+    "default_icon": "icon.png",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "js": ["js/jQuery_3.2.1.js", "js/popup.js"]
+    }
+  ]
+}
