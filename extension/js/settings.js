@@ -11,6 +11,7 @@ var plaidHandler = Plaid.create({
       public_token: publicToken
     }, function(response) {
       chrome.storage.sync.set({itemId: response.item});
+      loadAccounts(response.item);
     });
   }
 });
@@ -100,50 +101,89 @@ const deleteWebsite = function(name, $target) {
 };
 
 /* 
- * Script run on page load
+ * Runs on page load or after a user links their accounts
+ * @param {string} itemId - the id of the users accounts from an institution
  */
-$(function(){
-  chrome.storage.sync.get(['itemId', 'websites'], function({itemId, websites}){
-    let $bankList = $('.bank-collection'),
-        $websiteList = $('.website-collection'),
+const loadAccounts = function(itemId) {
+  let $loaderSection = $('.loader-section'),
+      $accountsSection = $('.accounts-section');
+
+  $loaderSection.removeClass('hide');
+  $accountsSection.hide();
+
+  //Get the accounts for the user
+  $.get(`http://localhost:8000/accounts?item=${itemId}`).done(({accounts=[]})=>{
+    let bankAmt = 0,
+        creditAmt = {used: 0, total: 0},
+        $accountList = $('.bank-collection'),
         balances = [];
+    $loaderSection.addClass('hide');
+    $('.connect-btn').hide();
+    $accountsSection.show();
+    $accountList.show();
+    accounts.forEach(account => {
+      let balance = account.balances.available || account.balances.limit - account.balances.current;
+      
+      //Add HTML for each account and store balances
+      $accountList.append(createAccountHtml(account));
+      balances.push({name: account.name, balance: balance});
+
+      //Compute overall available balances
+      if (account.type === 'depository' && account.balances.available) {
+        //Ignores CD accounts for now
+        bankAmt += account.balances.available;              
+      }
+
+      if (account.type === 'credit') {
+        creditAmt.total += account.balances.limit;
+        creditAmt.used += account.balances.current;
+      }
+    });
+    chrome.storage.sync.set({'balances': balances, 'bankAmt': bankAmt, 'creditAmt': creditAmt});
+  });  
+};
+
+/*
+ * Add a new website to the blacklist
+ */
+const addWebsite = function() {
+  let $input = $('input[name=blacklist-website]');
+  $('.website-collection').show();
+  chrome.storage.sync.get('websites', function({websites=[]}){
+    let value = extractHostname($input.val());
+    websites.push({name: value});
+
+    chrome.storage.sync.set({'websites': websites}, () => {
+      let $collection = $('.website-collection').append(createSiteHtml({name: value}))
+      let $newItem = $collection.find(`li[data-name="${value}"]`)[0];
+      $('.delete-website', $newItem).click(()=>{ deleteWebsite(name, $newItem); });
+    });
+    //Clear the blacklisted input
+    $input.val('');
+  });
+};
+
+/* 
+ * Runs on page load
+ * Sets up account and website list if user has already linked and/or added data
+ */
+const loadSettings = function() {
+  chrome.storage.sync.get(['itemId', 'websites'], function({itemId, websites}){
+    let $websiteList = $('.website-collection'),
+        $accountList = $('.bank-collection');
 
     //Check to see if user has already linked their accounts
     if (itemId) {
-      $('.connect-btn').hide();
-
-      //Get the accounts for the user
-      $.get(`http://localhost:8000/accounts?item=${itemId}`).done(({accounts=[]})=>{
-        let bankAmt = 0,
-            creditAmt = {used: 0, total: 0};
-
-        accounts.forEach(account => {
-          let balance = account.balances.available || account.balances.limit - account.balances.current;
-          
-          //Add HTML for each account and store balances
-          $bankList.append(createAccountHtml(account));
-          balances.push({name: account.name, balance: balance});
-
-          //Compute overall available balances
-          if (account.type === 'depository' && account.balances.available) {
-            //Ignores CD accounts for now
-            bankAmt += account.balances.available;              
-          }
-
-          if (account.type === 'credit') {
-            creditAmt.total += account.balances.limit;
-            creditAmt.used += account.balances.current;
-          }
-        });
-        chrome.storage.sync.set({'balances': balances, 'bankAmt': bankAmt, 'creditAmt': creditAmt});
-      });
+      loadAccounts(itemId);
     } else {
       //Prompt the user to connect their accounts with Plaid
       $websiteList.hide();
+      $accountList.hide();
+      $('.accounts-description').show();
       $('.connect-btn').click(() => { plaidHandler.open();});      
     }
 
-    if (websites) {
+    if (websites && websites.length) {
       websites.forEach(website => {
         //Add HTML for each blacklisted website
         $websiteList.append(createSiteHtml(website));
@@ -153,23 +193,20 @@ $(function(){
         let $target = $(evt.target).parents('li');
         deleteWebsite($('.title', $target).text(), $target);
       });
+    } else {
+      $websiteList.hide();
     }
   });
 
-  $('.blacklist-website-btn').click(evt => {
-    let $input = $('input[name=blacklist-website]');
+  $('.blacklist-website-btn').click(addWebsite);
+  $('input[name="blacklist-website"]').keypress(evt => {
+    if (evt.keyCode === 13) {
+      addWebsite();
+    }
+  });  
+}
 
-    chrome.storage.sync.get('websites', function({websites=[]}){
-      let value = extractHostname($input.val());
-      websites.push({name: value});
-
-      chrome.storage.sync.set({'websites': websites}, () => {
-        let $collection = $('.website-collection').append(createSiteHtml({name: value}))
-        let $newItem = $collection.find(`li[data-name="${value}"]`)[0];
-        $('.delete-website', $newItem).click(()=>{ deleteWebsite(name, $newItem); });
-      });
-      //Clear the blacklisted input
-      $input.val('');
-    });
-  });
-})
+/* 
+ * Script run on page load
+ */
+$(loadSettings)

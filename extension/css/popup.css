@@ -1,0 +1,40 @@
+/* CSS to be injected into blacklist pages */
+
+#shopping-sos-container {
+	position: fixed;
+	top: 10px;
+	width: 40%;
+	height: 200px;
+	padding: 10px;
+	background: rgb(244, 244, 244);
+	border: 2px solid #4F6D7A;
+	z-index: 1000;
+}
+
+#shopping-sos-flex {
+	display: flex;
+	justify-content: space-around;
+}
+
+#shopping-sos-credit-bar {
+	height: 100px;
+	width: 200px;
+	margin: 10px auto 20px auto;
+}
+
+#shopping-sos-img {
+	width: auto;
+	margin: 10px auto 20px auto;
+}
+
+.shopping-sos-h3 {
+	text-align: center;
+}
+
+.shopping-sos-flex-item {
+	text-align: center;
+}
+
+.shopping-sos-p {
+	margin-bottom: 10px;
+}

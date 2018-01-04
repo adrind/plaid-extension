@@ -1,23 +1,19 @@
 'use strict';
 
-var dotenv = require('dotenv').config();
-var envvar = require('envvar');
-var express = require('express');
-var bodyParser = require('body-parser');
-var moment = require('moment');
-var plaid = require('plaid');
+const dotenv = require('dotenv').config();
+const envvar = require('envvar');
+const express = require('express');
+const bodyParser = require('body-parser');
+const moment = require('moment');
+const plaid = require('plaid');
 const { Pool, Client } = require('pg');
 const pool = new Pool()
 
-var APP_PORT = process.env.APP_PORT;
-var PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID;
-var PLAID_SECRET = process.env.PLAID_SECRET;
-var PLAID_PUBLIC_KEY = process.env.PLAID_PUBLIC_KEY;
-var PLAID_ENV = process.env.PLAID_ENV;
-
-// We store the access_token in memory - in production, store it in a secure
-// persistent data store
-var PUBLIC_TOKEN = null;
+const APP_PORT = process.env.APP_PORT;
+const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID;
+const PLAID_SECRET = process.env.PLAID_SECRET;
+const PLAID_PUBLIC_KEY = process.env.PLAID_PUBLIC_KEY;
+const PLAID_ENV = process.env.PLAID_ENV;
 
 const insertText = 'INSERT INTO plaid(item_id, access_token) VALUES($1, $2) RETURNING *'
 const lookupText = 'SELECT * FROM plaid WHERE item_id=$1';
@@ -47,8 +43,8 @@ app.get('/', function(request, response, next) {
 });
 
 app.post('/get_access_token', function(request, response, next) {
-  PUBLIC_TOKEN = request.body.public_token;
-  client.exchangePublicToken(PUBLIC_TOKEN, function(error, tokenResponse) {
+  let publicToken = request.body.public_token;
+  client.exchangePublicToken(publicToken, function(error, tokenResponse) {
     if (error != null) {
       var msg = 'Could not exchange public_token!';
       console.log(msg + '\n' + error);
@@ -57,25 +53,19 @@ app.post('/get_access_token', function(request, response, next) {
       });
     }
 
-    console.log('Access Token: ' + tokenResponse.access_token);
-    console.log('Item ID: ' + tokenResponse.item_id);
-    pool.query(insertText, [tokenResponse.item_id, tokenResponse.access_token], (err, res) => {
-      if (err) {
-        console.log(err.stack)
-      } else {
-        console.log(res.rows[0])
-        // { name: 'brianc', email: 'brian.m.carlson@gmail.com' }
-      }
+    pool.query(insertText, [tokenResponse.item_id, tokenResponse.access_token])
+    .then(res => {
+      response.json({
+        'item': tokenResponse.item_id
+      })
     })
-    response.json({
-      'item': tokenResponse.item_id
-    });
+    .catch(e => console.log(e.stack))
   });
 });
 
 app.get('/accounts', function(request, response, next) {
   var itemId = request.query.item;
-  console.log('item is',itemId);
+
   pool.query(lookupText, [itemId]).then(res => {
     var access_token = res.rows[0].access_token
     client.getAuth(access_token, function(error, authResponse) {
@@ -87,7 +77,6 @@ app.get('/accounts', function(request, response, next) {
         });
       }
 
-      console.log(authResponse.accounts);
       response.json({
         error: false,
         accounts: authResponse.accounts,

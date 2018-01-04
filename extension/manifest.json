@@ -14,10 +14,12 @@
     "storage",
     "tabs"
   ],
+  "web_accessible_resources": ["images/*.png"],
   "content_scripts": [
     {
       "matches": ["*://*/*"],
-      "js": ["js/jQuery_3.2.1.js", "js/popup.js"]
+      "css": ["css/popup.css"],
+      "js": ["js/jQuery_3.2.1.js", "js/progressbar.min.js", "js/popup.js"]
     }
   ]
 }

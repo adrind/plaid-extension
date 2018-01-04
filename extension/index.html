@@ -12,16 +12,32 @@
       <div class="col s6 offset-s3">
         <h1 class="center-align">Shopping SOS</h1>
         <p class="center-align">Curb your online shopping habits by reminding yourself of your budget</p>
-        <div class="section">
+        <div class="loader-section hide" style="text-align: center;margin-top: 20px;">
+          <div class="preloader-wrapper big active">
+            <div class="spinner-layer spinner-green-only">
+              <div class="circle-clipper left">
+                <div class="circle"></div>
+              </div><div class="gap-patch">
+                <div class="circle"></div>
+              </div><div class="circle-clipper right">
+                <div class="circle"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="section accounts-section">
+
           <h5>Accounts</h5>
+          <p class="accounts-description">Link your accounts to our extension to see your current balances while you online shop. We promise to never store your financial information!</p>
           <ul class="bank-collection collection"></ul>
-          <button class="waves-effect waves-light btn connect-btn">Connect</button>
+          <button class="waves-effect waves-light btn connect-btn">Connect your accounts</button>
         </div>
         <div class="section">
-          <h5>Favorite shopping websites</h5>
+          <h5>Blacklisted websites</h5>
+          <p>Add your favorite shopping websites here and we'll display how much money you have available in your accounts while you're shopping on them.</p>
           <ul class="website-collection collection"></ul>
           <input type="text" name="blacklist-website" placeholder="https://somewebsite.thatyouspendtoomuch$$on.com">
-          <button class="waves-effect waves-light btn blacklist-website-btn">Add</button>
+          <button class="waves-effect waves-light btn blacklist-website-btn">Add a website</button>
         </div>
       </div>
     </div>
